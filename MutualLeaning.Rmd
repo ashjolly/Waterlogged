@@ -1,0 +1,366 @@
+---
+title: "Waterlogged Data Analysis"
+author: "Ashlee Jollymore"
+date: "26April2016"
+output: 
+  html_document:
+    toc: true
+    number_sections: true
+    theme: readable
+---
+
+# Getting citizen versus scientist data
+The first part of the analysis looks at statistically comparing citizen collected data to our own to answer the question of whether citizen collected data (samples) were the same as those collected by professional scientists (us).
+First step is to retreive both the data from the WL and DBp projects (citizen versus scientist data) into two dataframes. Note all all function scripts are in SpecScript repo (private at this moment). Information regarding data collection and cleaning contained in code in RMarkdown file (suppressed for PDF file).
+```{r echo = FALSE, message = FALSE, warning= FALSE}
+
+# get data for citizen-related data - DOC/NO3/TOC etc
+# Use function to get WL data and assemble it into nice dataframe
+source("/Users/user/SpecScripts/WLgetdata_function.R")
+WLdata <- getWLdata(project = "WL", 
+                    spectro.direct = "/Users/user/Dropbox/PhD Work/PhD Data/WL_data/WL_spectrodata", 
+                    fppar.directory = "/Users/user/Dropbox/PhD Work/PhD Data/WL_data/WL_spectrodata/WL_fppar", 
+                    pathlength = 33)
+WLdata <- as.data.frame(WLdata)
+```
+
+WL and DBP data arecompiled in R into two separate dataframes. This includes water quality data such as DOC and NO3 concentrations, as well as quality data associated with DOC quality (spectrophotometric indicies)
+
+```{r echo = FALSE}
+# Get data for our own data - from DBP project
+source("/Users/user/SpecScripts/DBP_datacompile_function.R")
+DBPdata <- getDBPdata(save.directory <- '/Users/user/Dropbox/PhD Work/PhD Data/DBP_data/DBP_analysisdata',
+  CM.pre.directory <- "/Users/user/Dropbox/PhD Work/PhD Data/DBP_data/DBP_fluorescence/DBP_prechlorination/DBP_pre_CM_PARAFAC",
+  pre.directory <- "/Users/user/Dropbox/PhD Work/PhD Data/DBP_data/DBP_fluorescence/DBP_prechlorination/DBP_prechlor_correctedEEMSRaleigh")
+DBPdata <- DBPdata[!rownames(DBPdata) %in% "119", ] #take out null last row
+
+```
+
+A preliminary look at the data:
+```{r include = FALSE}
+# if the columns are factors, convert to numeric
+
+indx <- sapply(DBPdata, is.factor)
+DBPdata[indx] <- lapply(DBPdata[indx], function(x) as.numeric(as.character(x)))
+
+indx <- sapply(WLdata, is.factor)
+WLdata[indx] <- lapply(WLdata[indx], function(x) as.numeric(as.character(x)))
+```
+
+```{r echo = FALSE, message = FALSE, warnings = FALSE}
+# PLot DOC
+#WL DOC
+plot(WLdata$DOCcorr, WLdata$NO3.N)
+plot(DBPdata$NPOC_DOC_uncorrected, DBPdata$NO3)
+# 99 -102 in DBP are quite high? Something going wrong in the correction phase
+# Use uncorrecetd for now. Only affects DOC measurements from the spectro::lyzer
+```
+
+# Stories - Outliers and Inliers
+Here, we wanted to show specific outlier points corresponding to citizen data within the context of distributions from our own data, as well as that gathered by citizens
+
+Show outlier points on the density plot to show where points are in comparison to rest of data
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+# Cumulative distribution functions - WL versus DBP data - DOC
+
+#required packages
+library(tidyr)
+library(dplyr)
+library(plyr)
+library(stringr)
+library(stringi)
+library(ggplot2)
+
+# converrt DOC into the right format for density/histogram plots
+varmerge <- function(WLdata_var, DBPdata_var, varname){
+  temp <- data.frame(t(cbind(t(WLdata_var), t(DBPdata_var))))
+  code <- data.frame(t(cbind(t(WLdata$sample), t(DBPdata$sample))))
+  temp$code <- code
+  temp$code <- sapply(temp$code, function(x) stri_sub(x, 1, -5)) # get code column such that only "WL or DBp" is in the column
+  colnames(temp)[1] <- varname
+  return(temp)
+}
+# Variables to examine
+DOC <- varmerge(WLdata$DOCcorr, DBPdata$NPOC_DOC_uncorrected, varname = "DOC_mgL")
+NO3 <- varmerge(WLdata$NO3.N, DBPdata$NO3, varname = "NO3mgL")
+SUVA <- varmerge(WLdata$SUVA1, DBPdata$SUVA, varname = "SUVA")
+e2e3 <- varmerge(WLdata$e2e3, DBPdata$e2e3.dec, varname = "e2e3")
+e4e6 <- varmerge(WLdata$e4e6, DBPdata$e4e6.dec, varname = "e4e6")
+SR <- varmerge(WLdata$SR, DBPdata$SR.dec, varname = "SR")
+FI <- varmerge(WLdata$FI, DBPdata$FI, varname = "FI")
+HIX <- varmerge(WLdata$HIX_ohno_area, DBPdata$HIX_ohno_area, varname = "HIX_ohno")
+BIX <- varmerge(WLdata$FrI, DBPdata$FrI, varname = "BIX")
+peakA <- varmerge(WLdata$peakA, DBPdata$peakA, varname = "peakA")
+peakC <- varmerge(WLdata$peakC, DBPdata$peakC, varname = "peakC")
+peakB <- varmerge(WLdata$peakB, DBPdata$peakB, varname = "peakB")
+peakT <- varmerge(WLdata$peakT, DBPdata$peakT, varname = "peakT")
+peakT.C <- varmerge(WLdata$peakt.peakC, DBPdata$peakt.peakC, varname = "peakTC")
+redox <- varmerge(WLdata$redox, DBPdata$redox, varname = "redox")
+perprotein <- varmerge(WLdata$perprotein, DBPdata$perprotein, varname = "perprotein")
+
+# Do density plots
+# http://stackoverflow.com/questions/6939136/how-to-overlay-density-plots-in-r
+# DOC
+DOCplot <- ggplot(DOC, aes(DOC_mgL, fill = code)) + geom_density(alpha = 0.2) +
+  geom_vline(aes(xintercept=mean(WLdata$DOCcorr, na.rm=T)),   # Ignore NA values for mean
+               color="blue", linetype="dashed", size=1) +
+  geom_vline(aes(xintercept=mean(DBPdata$NPOC_DOC_uncorrected, na.rm=T)),   # Ignore NA values for mean
+               color="red", linetype="dashed", size=1) +
+  ggtitle("DOC Concentration")
+DOCplot
+
+# NO3
+NO3plot <- ggplot(NO3, aes(NO3mgL, fill = code)) + geom_density(alpha = 0.2) +
+  geom_vline(aes(xintercept=mean(WLdata$NO3.N, na.rm=T)),   # Ignore NA values for mean
+               color="blue", linetype="dashed", size=1) +
+  geom_vline(aes(xintercept=mean(DBPdata$NO3, na.rm=T)),   # Ignore NA values for mean
+               color="red", linetype="dashed", size=1) + 
+  ggtitle("NO3 Concentrations")
+NO3plot
+
+# bind NO3 and DOC together
+DN <- cbind(DOC, NO3)
+# Plot as scatter plot to add points
+DOCNO3 <- ggplot(DN, aes(x = NO3mgL, y = DOC_mgL, color = code)) + geom_point() +
+  xlim(0, 3) +
+  scale_shape_manual(values=c(5,2)) +
+  labs(x = "NO3 (mg/L)",
+       y = "DOC (mg/L)",
+       title = "DOC versus NO3 Concentration - Scientist and Citizen Data") 
+  
+#geom_point(aes(size=NO3)) - put in percent protein?
+```
+
+## Story 1  - Evergreen
+
+Evergreen is a national not-for-profit with two bases in Vancouver and in Toronto. Their participation within the Waterlogged project co-incides with their own citizen science program Uncover Your Creeks in the Metro Vancouver region. This program focuses on engagement and education, directly involving citizens in the resortation, rehabiltation and monitoring of streams within the urban context.
+
+Evergreen took dim(ES)[1] samples during the Waterlogged tenure within sites that they use for their Uncover Your Creeks program, including the the Serpentine River, Wagg Creek, Chubb Creek, Still Creek and Jericho Pond. 
+
+
+- took samples high DOC and NO3. Importance of education versus data collection (Jericho pond). Mislabelled samples
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+# show points for Evergreen samples in the context of DOC and NO3 histrograms
+# Evergreen samples = 46-56, 80-84, 121-124
+
+sample <- c("WL0046", "WL0047", "WL0048", "WL0049", "WL0050", "WL0051", "WL0052",
+                                              "WL0053", "WL0054", "WL0055", "WL0056", "WL0080", "WL0081", "WL0083",
+                                              "WL0084", "WL0121", "WL0122", "WL0123")
+EGsamples <- sample[sample %in% WLdata$sample]
+#match samples that have data
+ES <- subset(WLdata, WLdata$sample == EGsamples)
+
+ES <- WLdata[which(WLdata$sample %in% EGsamples),]
+
+DOCNO3 +
+  geom_point(data=ES, aes(x=ES$NO3.N, y=ES$DOCcorr), colour="blue", size=3) # Use a hollow circle and triangle
+
+```
+
+## Story 2 - Silver Creek Streamkeepers
+- coal train derailment
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+# Silver creek streamkeepers
+# Prior to derailment: 157, 158, 165
+# Down = 27, 164
+
+up <- c("WL0157", "WL0158", "WL0165")
+down <- c("WL0027", "WL0164")
+all <- c("WL0157", "WL0158", "WL0165", "WL0027", "WL0164")
+
+#match samples that have data
+up <- WLdata[which(WLdata$sample %in% up),]
+down <- WLdata[which(WLdata$sample %in% down),]
+
+DOCNO3 +
+  geom_point(data=up, aes(x=up$NO3.N, y=up$DOCcorr), colour="blue", size=3) +
+  geom_point(data=down, aes(x=down$NO3.N, y=down$DOCcorr), colour="black", size=3) # missing a point here!!
+
+```
+
+
+## Story 3 - Bowen Island Municipality
+- effect of septic systems on lagoon water quality
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+# Bowen creek samples 218-221
+BI <- c("WL0218", "WL0219", "WL0220", "WL0221")
+BIs <- WLdata[which(WLdata$sample %in% BI),]
+
+DOCNO3 +
+  geom_point(data=BIs, aes(x=BIs$NO3.N, y=BIs$DOCcorr), colour="blue", size=3) 
+
+```
+
+
+## Story 4 - North Shore Wetland Partners
+ - deforestation on Cypress - samples around here. Evidence of high iron (e4e6:SUVA)
+ - Estuary samples?
+ 
+ 
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+# North Shore Wetland Partners
+BI <- c("WL0090", "WL0091", "WL0092", "WL0093", "WL0094", "WL0061", "WL0062", "WL0063", "WL0064", "WL0065",
+       "WL0067", "WL0068", "WL0069", "WL0093", "WL0094")
+BIs <- WLdata[which(WLdata$sample %in% BI),]
+
+DOCNO3 +
+  geom_point(data=BIs, aes(x=BIs$NO3.N, y=BIs$DOCcorr), colour="blue", size=3) 
+
+```
+
+## Story 5 - North Shore Streamkeepers (Pacific Streamkeepers Federation)
+- urban areas and effect of urbanization on fish-bearking streams. Example of very involved with in depth scientific program co-developed with Department of Fisheries and Oceans. Example of champion (Zo Ann morton). 
+- issues with stormwater infltation into streams, as well as illegal connections to stormsystem causing sewage to enter streams.
+-Taccogna, G. and K. Munro (eds). 1995. The Streamkeepers Handbook: a Practical Guide to Stream and Wetland Care. Salmonid Enhancement Program, Dept. Fisheries and Oceans, Vancouver, BC.
+- http://www.pskf.ca/publications/Handbook%20and%20Modules.pdf
+- WL186 = description: Hastings Creek, Flow coming out of construction site, filter cloth in place? Running grey. DOC = 13.67 mg/L
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+# WL 68 = very high SUVA - high iron?
+BI <- c("WL0090", "WL0091", "WL0092", "WL0093", "WL0094", "WL0061", "WL0062", "WL0063", "WL0064", "WL0065",
+       "WL0067", "WL0068", "WL0069", "WL0070", "WL0065")
+BIs <- WLdata[which(WLdata$sample %in% BI),] # missing 61?
+
+DOCNO3 +
+  geom_point(data=BIs, aes(x=BIs$NO3.N, y=BIs$DOCcorr), colour="blue", size=3) 
+
+```
+
+
+## Story 6 Byrne Creek Streamkeepers
+- effect of urbanization on stream?
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+# WL 68 = very high SUVA - high iron?
+BI <- c("WL0090", "WL0091", "WL0092", "WL0093", "WL0094", "WL0061", "WL0062", "WL0063", "WL0064", "WL0065",
+       "WL0067", "WL0068", "WL0069", "WL0070", "WL0065")
+BIs <- WLdata[which(WLdata$sample %in% BI),] # missing 61?
+
+DOCNO3 +
+  geom_point(data=BIs, aes(x=BIs$NO3.N, y=BIs$DOCcorr), colour="blue", size=3) 
+
+```
+
+## Story 7: One sample from Mt Polley Spill
+- WL40
+- Description: "Dock near boats. summertime. Clear morning around 24degC. Three days after major environmental disaster at Polley Mountain Mine. Lake and surrounding water ways have floating debris + government water ban."
+
+## story 8: Lawson Creek Fish Kills 
+Lawson creek - West vancouver STreamkeepers + Pacific Wetland Partners
+66, 67 - PWP
+102, 110, 130 - West Van Streamkeepers
+"The second attachment is a summary of possible sources of fish kill written by a biologist with Sartori Environmental.  I don’t agree with the summary that the coho expired due to being stressed during transport.  If this were the case, one would have expected dead fish after the date we released the coho, rather than several weeks later.  I think we just don’t know why the fish were killed. 
+ 
+Elizabeth Hardy""
+
+
+# Supplemental Information and Statistical Tests
+## Plotting Citizen Data Versus Our Own Data
+To look at the difference between citizen data and our own, use cumulative distribution functions to lok at density of data around mean.
+
+
+Expressed as histograms, with our data in one and the citizen data in another (for DOC concentrations only):
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+# plot the two in histograms
+library(ggplot2)
+#http://www.r-bloggers.com/how-to-make-a-histogram-with-ggplot2/
+
+ggplot(data=DBPdata, aes(DBPdata$NPOC_DOC_uncorrected)) +
+  geom_histogram(aes(y =..density..),
+                 breaks=seq(0, 30, by = 2),
+                 col="black",
+                 fill="red",
+                 alpha = .2) +
+  geom_density(col="red") +
+  labs(title="Our Data - [DOC]") +
+  labs(x="DOC (mg/L)", y="Count") +
+  geom_vline(aes(xintercept=mean(DBPdata$NPOC_DOC_uncorrected, na.rm=T)),   # Ignore NA values for mean
+               color="red", linetype="dashed", size=1)
+
+ggplot(data=WLdata, aes(WLdata$DOCcorr)) +
+  geom_histogram(aes(y =..density..),
+                 breaks=seq(0, 30, by = 2),
+                 col="black",
+                 fill="blue",
+                 alpha = .2) +
+  geom_density(col="blue") +
+  labs(title="Citizen Data - [DOC]") +
+  labs(x="DOC (mg/L)", y="Count") +
+  geom_vline(aes(xintercept=mean(WLdata$DOCcorr, na.rm=T)),   # Ignore NA values for mean
+               color="blue", linetype="dashed", size=1)
+
+```
+
+Lastly, can also look at the cumulative distribution function to see shifts in the data between the two sets. See the evidence of a 'tail' in the WL data, where higher DOC samples are contributing.
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+#now make your lovely plot - CDF
+# https://r-dir.com/blog/2014/03/cdfs-in-r.html
+# http://stackoverflow.com/questions/6989015/ecdf-on-the-same-plot-using-ggplot2
+
+ggplot(DOC, aes(x = DOC_mgL)) + 
+   stat_ecdf(aes(group = code, colour = code)) 
+
+```
+
+
+## Statistical tests - is citizen data different from scientist collected data?
+The first statistical test for significant differences is a t-test to look at whether means are significantly different between the two groups. 
+
+```{r, echo = FALSE, warning = FALSE}
+# Statistical test for significant differences
+# T-tests
+t.test(DOC_mgL ~ code, data = DOC)
+t.test(NO3mgL ~ code, data = NO3)
+t.test(e2e3 ~ code, data = e2e3)
+t.test(e4e6 ~ code, data = e4e6)
+t.test(FI ~ code, data = FI)
+t.test(HIX_ohno ~ code, data = HIX)
+t.test(BIX ~ code, data = BIX)
+t.test(peakA ~ code, data = peakA)
+t.test(peakC ~ code, data = peakC)
+t.test(peakT ~ code, data = peakT)
+t.test(peakB ~ code, data = peakB)
+t.test(redox ~ code, data = redox)
+t.test(perprotein ~ code, data = perprotein)
+
+```
+
+Next, show boxplots of data
+
+```{r, echo = FALSE, warning = FALSE}
+# First, show boxplots of water quality parameters between the two groups
+# Specific parameters you want to look at: DOC, NO3, SUVA, e2e3, e4e6, slope ratio, FI, HIX, BIX, perprotein, redox index, c1-13?
+ggplot(DOC, aes(x=code, y=DOC_mgL, fill=code)) + geom_boxplot()
+ggplot(NO3, aes(x=code, y=NO3mgL, fill=code)) + geom_boxplot()
+ggplot(e2e3, aes(x=code, y=e2e3, fill=code)) + geom_boxplot()
+ggplot(e4e6, aes(x=code, y=e4e6, fill=code)) + geom_boxplot()
+ggplot(FI, aes(x=code, y=FI, fill=code)) + geom_boxplot()
+ggplot(HIX, aes(x=code, y=HIX_ohno, fill=code)) + geom_boxplot()
+ggplot(BIX, aes(x=code, y=BIX, fill=code)) + geom_boxplot()
+ggplot(peakA, aes(x=code, y=peakA, fill=code)) + geom_boxplot()
+ggplot(peakC, aes(x=code, y=peakC, fill=code)) + geom_boxplot()
+ggplot(peakT, aes(x=code, y=peakT, fill=code)) + geom_boxplot()
+ggplot(peakB, aes(x=code, y=peakB, fill=code)) + geom_boxplot()
+ggplot(redox, aes(x=code, y=redox, fill=code)) + geom_boxplot()
+ggplot(perprotein, aes(x=code, y=perprotein, fill=code)) + geom_boxplot()
+
+```
+
+```{r, echo = FALSE}
+#Secondly, we use a linear regression model to look at the efefct of citizen versus scientist data in the contexts of other variables, including the time of day the data was collected, the region from which it was collected,  the time of year (season), julien day, etc.
+
+
+
+#Here, we want to plot the distribution of our data versus citizen data for the parameters collected as part of the Waterlogged project. The object here is to look more specifically at how data is distributed for each set beyond statistical observation of differences
+
+```
+
+
+
+
+
