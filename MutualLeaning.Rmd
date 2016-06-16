@@ -8,10 +8,27 @@ output:
     number_sections: true
     theme: readable
 ---
+# Introduction
 
-# Getting citizen versus scientist data
+The Waterlogged project was envisioned as a means of investogation into how human activities affect water quality (specifically, organic matter concentration and composition). The hope of using citizen science would be to serve both educational and community engagement goals, as well as to increase the reach of sampling.
+
+# Methods
+
+In the project, participants were told that the aim of the project was to 'investigate how human activities affect water quality'. Given that organic matter is a less known water quality parameter, information regarding organic matter (what it is, and why it is important to investigate in terms of environmental and human health), was made available through conversation, as well as on the project website (which participants were urged to look at.)
+
+Participants were given sample kits. These sample kits consist of acetic acid bathed brown PE bottle in a ziplock bag. This ziplock bag contains a small pencil; attached to the bag are both the protocol for taking a sample, as well as the data sheet to be filled out, both written on waterproof paper. Additionally, a freezer pack was included to keep the sample cool to prevent degredation.
+
+The protocol for taking a sample was designed to be scientifically robust, as well as easy for people to follow. This included criteria for choosing a sample location, which included stipulation that the sample be from streams and rivers, and that it be actively flowing. The importance of safety in choosing a site and taking a sample was also emphaszied, and participants told not to enter the water, and to watch for hazards such as slippery, wet surfaces.
+
+Sampling itself was designed to be scientifically robust and simple for particiants to follow. Critically, participants were told to rinse the bottle at least three times, to sample in a location that had not been disturbed, and to ensure that contamination of the bottle and sample did not occur. Participants were alsp asked to note critical information about the sample on the sample collection sheet. This included the date and time of collection, teh GPS location if possible, a description of the location and anything within the vicinity thatcould affect water quality. A sample description was also included to help orient participants. Participants were also asked to take a picture up, down, and across from where the sample was taken to help orient and provide data regarding sample surroudings.
+
+# Exporing Citizen versus scientist data
 The first part of the analysis looks at statistically comparing citizen collected data to our own to answer the question of whether citizen collected data (samples) were the same as those collected by professional scientists (us).
-First step is to retreive both the data from the WL and DBp projects (citizen versus scientist data) into two dataframes. Note all all function scripts are in SpecScript repo (private at this moment). Information regarding data collection and cleaning contained in code in RMarkdown file (suppressed for PDF file).
+First step is to retreive both the data from the WL and DBP projects (citizen versus scientist data) into two dataframes. Note all all function scripts are in SpecScript repo (private at this moment). Information regarding data collection and cleaning contained in code in RMarkdown file (suppressed for PDF file).
+
+WL and DBP data arecompiled in R into two separate dataframes. This includes water quality data such as DOC and NO3 concentrations, as well as quality data associated with DOC quality (spectrophotometric indicies).
+
+
 ```{r echo = FALSE, message = FALSE, warning= FALSE}
 
 # get data for citizen-related data - DOC/NO3/TOC etc
@@ -22,11 +39,7 @@ WLdata <- getWLdata(project = "WL",
                     fppar.directory = "/Users/user/Dropbox/PhD Work/PhD Data/WL_data/WL_spectrodata/WL_fppar", 
                     pathlength = 33)
 WLdata <- as.data.frame(WLdata)
-```
 
-WL and DBP data arecompiled in R into two separate dataframes. This includes water quality data such as DOC and NO3 concentrations, as well as quality data associated with DOC quality (spectrophotometric indicies)
-
-```{r echo = FALSE}
 # Get data for our own data - from DBP project
 source("/Users/user/SpecScripts/DBP_datacompile_function.R")
 DBPdata <- getDBPdata(save.directory <- '/Users/user/Dropbox/PhD Work/PhD Data/DBP_data/DBP_analysisdata',
@@ -34,10 +47,6 @@ DBPdata <- getDBPdata(save.directory <- '/Users/user/Dropbox/PhD Work/PhD Data/D
   pre.directory <- "/Users/user/Dropbox/PhD Work/PhD Data/DBP_data/DBP_fluorescence/DBP_prechlorination/DBP_prechlor_correctedEEMSRaleigh")
 DBPdata <- DBPdata[!rownames(DBPdata) %in% "119", ] #take out null last row
 
-```
-
-A preliminary look at the data:
-```{r include = FALSE}
 # if the columns are factors, convert to numeric
 
 indx <- sapply(DBPdata, is.factor)
@@ -45,16 +54,16 @@ DBPdata[indx] <- lapply(DBPdata[indx], function(x) as.numeric(as.character(x)))
 
 indx <- sapply(WLdata, is.factor)
 WLdata[indx] <- lapply(WLdata[indx], function(x) as.numeric(as.character(x)))
-```
 
-```{r echo = FALSE, message = FALSE, warnings = FALSE}
 # PLot DOC
 #WL DOC
-plot(WLdata$DOCcorr, WLdata$NO3.N)
-plot(DBPdata$NPOC_DOC_uncorrected, DBPdata$NO3)
+#plot(WLdata$DOCcorr, WLdata$NO3.N)
+#plot(DBPdata$NPOC_DOC_uncorrected, DBPdata$NO3)
 # 99 -102 in DBP are quite high? Something going wrong in the correction phase
 # Use uncorrecetd for now. Only affects DOC measurements from the spectro::lyzer
+
 ```
+
 
 # Stories - Outliers and Inliers
 Here, we wanted to show specific outlier points corresponding to citizen data within the context of distributions from our own data, as well as that gathered by citizens
@@ -63,7 +72,6 @@ Show outlier points on the density plot to show where points are in comparison t
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
 # Cumulative distribution functions - WL versus DBP data - DOC
-
 #required packages
 library(tidyr)
 library(dplyr)
@@ -81,6 +89,7 @@ varmerge <- function(WLdata_var, DBPdata_var, varname){
   colnames(temp)[1] <- varname
   return(temp)
 }
+
 # Variables to examine
 DOC <- varmerge(WLdata$DOCcorr, DBPdata$NPOC_DOC_uncorrected, varname = "DOC_mgL")
 NO3 <- varmerge(WLdata$NO3.N, DBPdata$NO3, varname = "NO3mgL")
@@ -120,26 +129,39 @@ NO3plot <- ggplot(NO3, aes(NO3mgL, fill = code)) + geom_density(alpha = 0.2) +
 NO3plot
 
 # bind NO3 and DOC together
-DN <- cbind(DOC, NO3)
+DN <- cbind(DOC, NO3, SUVA, perprotein, FI)
+
 # Plot as scatter plot to add points
 DOCNO3 <- ggplot(DN, aes(x = NO3mgL, y = DOC_mgL, color = code)) + geom_point() +
   xlim(0, 3) +
   scale_shape_manual(values=c(5,2)) +
   labs(x = "NO3 (mg/L)",
        y = "DOC (mg/L)",
-       title = "DOC versus NO3 Concentration - Scientist and Citizen Data") 
-  
-#geom_point(aes(size=NO3)) - put in percent protein?
+       title = "DOC versus NO3 Concentration - Scientist and Citizen Data") +
+  geom_point(aes(size = FI)) #+ 
+  #scale_size_continuous(name = FI, range = c(0.5,3))
+# need to deal with NAs in FI...
+
+DOCNO3 
 ```
+
+
+Using Waterlogged as a case study, several lessons could be extracted. These are:
+
+Examine these lessons learned using explicit examples encountered within the Waterlogged case study.
 
 ## Story 1  - Evergreen
 
+*Lesson learned: Goals around sampling can differ within different contexts (capacity building/education versus data collection)*
+
 Evergreen is a national not-for-profit with two bases in Vancouver and in Toronto. Their participation within the Waterlogged project co-incides with their own citizen science program Uncover Your Creeks in the Metro Vancouver region. This program focuses on engagement and education, directly involving citizens in the resortation, rehabiltation and monitoring of streams within the urban context.
 
-Evergreen took dim(ES)[1] samples during the Waterlogged tenure within sites that they use for their Uncover Your Creeks program, including the the Serpentine River, Wagg Creek, Chubb Creek, Still Creek and Jericho Pond. 
+Evergreen took dim(ES)[1] samples during the Waterlogged tenure within sites that they use for their Uncover Your Creeks program, including the the Serpentine River, Wagg Creek, Chubb Creek, Still Creek and Jericho Pond (shown as blue dots).
 
+Samples within the Evergreen subset tended to have higer DOC and NO3 than the average in both the citizen and scientist subsets. This coudl be attributed to the sample sites in which Evergreen has focused on, noting that they tend to be highly impacted by urban activities (such as the Still Creek and Chubb Creek sites), and thus may hav inflows of stormwater laden with NO3 and DOC from urban sources. Additionally, the greatest DOC concentratons correspond top samples from the Jericho Pond site, a man-made pond that suffers heavily from eurtiphication, espcially within the summer months in which sampling occured.
 
-- took samples high DOC and NO3. Importance of education versus data collection (Jericho pond). Mislabelled samples
+In noting that such samples comprised high DOC and NO3, and that this is due to the types of environments that were sampled, we note that such areas are part of educational and restoration work that is part of Evergreen's larger mandate; that integrating the waterlogged methodology within the activities occuring with Evergreen thus resulted in an examination of sites that are heavily impacted by human activities. Additionally, we note that the rational for Evergreen undertaking monitoring projects is firstly educational and capacity building within the community. Data quality and collection is somewhat secondary to these goals, and is somewhat reflected within the quality of sampling (which was reflected within factors such as the amount of data collected on sample sheets, and a number of sample kits that were returned in an incomplete way).
+
 
 ```{r echo = FALSE, message = FALSE, warning = FALSE}
 # show points for Evergreen samples in the context of DOC and NO3 histrograms
@@ -151,16 +173,36 @@ sample <- c("WL0046", "WL0047", "WL0048", "WL0049", "WL0050", "WL0051", "WL0052"
 EGsamples <- sample[sample %in% WLdata$sample]
 #match samples that have data
 ES <- subset(WLdata, WLdata$sample == EGsamples)
-
 ES <- WLdata[which(WLdata$sample %in% EGsamples),]
-
+# plot
 DOCNO3 +
-  geom_point(data=ES, aes(x=ES$NO3.N, y=ES$DOCcorr), colour="blue", size=3) # Use a hollow circle and triangle
+  geom_point(data=ES, aes(x=ES$NO3.N, y=ES$DOCcorr, size = FI), colour="blue") 
 
 ```
 
+
 ## Story 2 - Silver Creek Streamkeepers
 - coal train derailment
+*Lesson Learned: Community sampling as a response to a specific event; Limits of methodology; Difficulty of determining effects from specific events or conditions within generalized science plan*
+
+Details:
+
+The Silver Creek Streamkeepers are a small monitoring group tasked with monitoring Silver Creek, a small urban stream whose headwaters is located within Burnaby Mountain/SFU;it flows south, through residential areas in its norther reaches and increasingly industrial lands until it flows into the Brunette River, and aultimeately Burnaby Lake. The creek is home to various species of fish (including endangered Nooksack Dace, coho and chum salmon and cutthreat trout), and other fauna such as turtles, salamanders, beavers, coyotes and others. The streamkeeper groups is involved in monitoring, as well as restoration and salmon release activities.
+
+Participation within teh Waterlogged project was prompted partially out of a desire for increase data regarding water quality in general, as well as concern over a coal train deraillment. This deraillment occured in the lower reaches of Silver Creek, just upstream of where the stream enters Burnaby Lake, where Silver Creek emerges from a culvert beneath a Costco parking lot. Three Canadian National (CN) cars tipped into the stream, spilling 270 tonnes of metallurgical coal (a smaller percentage of which entered the stream, according to the Ministry of Environment) on January 11, 2014. It was estimated that this resulted in 5.5 cubic meters of coal in Silver Creek, and 76 cubic meters of coal in downstream Burnaby Lake (noting that heavy rains at the time of the derailment transported a large amount of coal downstream from the deraillment). The cause of the deraillment was attributed to heavy rains that caused a beaver dam breach upstream of the trcks, causing the stream to overflow tracks close to Brighton Avenue and Government Street in Burnaby, causing seven cars to derail and three cars containing coal to ultimately tip into the stream.
+
+Initially, the ecological impact of the coal spill was estimated to be low, with arising within animals breathing coal sediment through lungs or gills. It was expected that the spill would have with low water quality impacts. However, initial reports regarding the impact of the spill were deemed "deficient in addressing the conditions, environment, biota, and potential concerns in the impacted water bodies,” according to a Ministry of Environment memo dated February 6, 2014 (released on April 16, 2014). At this time, the Ministry requested that CN submit detailed information about the amount of coal spilled and recovered following the accident, and the environmental consequences and fate of the coal remaining in the creek and downstream lake. CN was also required to submit and undertake cleanup and protective measures on the site in an attempt to remediate and protect against future spills; such protective measures included streamside buffers and setbacks, reinforcing stream banks, removing hazardous trees, culvert cleaning, and goals towards protection fo downstream water and sediment quality. Remediation and removal of coal within the stream and lake was finsihed by April 15, 2014, and was primary accomplished by suction dredging , where the presumed coal-water mixture was suctioned through filters to remove coal and sediments, returning filtered water to the stream. After remediation, the company stated that they met provicipal cleaup criteria, and that a 'miniscule' amount of coal was left, but could not specify exact figures regarding residual amounts. 
+
+The Silver Creek Streamkeepers took five samples in a transect from stream headwaters to its intersection with the Brunette River in ******. All of these samples demonstrated higher than average NO3 concerntrations (Figure). In additon, the samples upstream of the coal deraillment (in blue), had a slightly lower concentration of DOC as compared to samples taken downstream of the derailment (in black). Additionally, we noted the presence of a unique peak within the fluorescence spectra of samples originating downstream fo the derailment.
+
+Despite this initial data, it is nearly impossible to say whether the slight changes in water quality are firstly significant, and secondly derive from teh coal train deraillment itself. Although concern over effects from this specific event were a dominate factor behind the Streamkeeper's participation within the project (noting that the Municiiaplity of Burnaby was the connecting contact that suggested particiaption, knowing of these concerns), other concerns regarding watershed issues that could affect water quality were also expressed. This included the dominate industrial uses of the watershed itself, significant recent construction just upstream of the derailment and sampling site, deforestation associated with a pipeline assessment, exposed peat within the channel (noting that peat farming was a past land use), and creosote-soaked wooden ties within the stream at the site of the derailment. Understanding the impact of derailment within this complex milieu would require a specific research program that would comprise a significantly greater degree of sampling. Additionally, while the methods we used to analyze organic matter composition have been used in a limited way to illuminate possible oil contamination, other analytical approaches (such as determination of hydrocarbon and metal concentrations) would likely be more direct.Thus, because of limitations arising from both sampling as well as a methodology that was not quite tailored to the specific concerns, speculations as to the water quality effects of both the specific spill event, as well as that deriving from watershed conditions, is merely speculation given the data produced within the context of the Waterlogged investigation. Given the concerns of the streamkeeper group, such a cnoslusion was an unsatisfying conclusion to a compelling story regarding water quality and impacts within our local context.
+
+
+References for the derailment:
+http://www.vancouversun.com/launches+cleanup+coal+dumped+January+derailment+Burnaby/9584019/story.html
+http://www.vancouversun.com/Coal+spill+feared+risk+aquatic+life+Burnaby+Silver+Creek/9406236/story.html
+http://www.straight.com/news/629231/cn-report-burnaby-coal-derailment-deficient-lacks-details-environmental-impacts
+http://www.burnabynow.com/news/cn-finishes-coal-spill-cleanup-1.963761#sthash.1w2efbBC.dpuf
 
 ```{r echo = FALSE, message = FALSE, warning = FALSE}
 # Silver creek streamkeepers
@@ -176,30 +218,38 @@ up <- WLdata[which(WLdata$sample %in% up),]
 down <- WLdata[which(WLdata$sample %in% down),]
 
 DOCNO3 +
-  geom_point(data=up, aes(x=up$NO3.N, y=up$DOCcorr), colour="blue", size=3) +
-  geom_point(data=down, aes(x=down$NO3.N, y=down$DOCcorr), colour="black", size=3) # missing a point here!!
-
+  geom_point(data=up, aes(x=up$NO3.N, y=up$DOCcorr, size = FI), colour="blue", size=3) +
+  geom_point(data=down, aes(x=NO3.N, y=DOCcorr, size = FI), colour="black", size=3) 
 ```
 
 
 ## Story 3 - Bowen Island Municipality
 - effect of septic systems on lagoon water quality
+- Black dot shows WL221, which corresponds to the sample taken as acontrol (stream entereing the lagoon prior to influence of septic fields).
+
+*Lesson Learned: Community sampling as a response to a specific event; Limits of methodology; Difficulty of determining effects from specific events or conditions within generalized science plan*
+
+Staff from the Municipality of Bowen Island were interested in participating within Waterlogged given concerns over the effect that possibly leaking spetic fields were having on a stream-fed lagoon. This area has seen much recent development of residential homes around the lagoon itself without the development of an expensive wastewater system; thus, new and existing developments use septic systems. Municipal staff were concerned about the aggregate effects of possible septic contamination into the lagoon, and were interested in any preliminary water quality data that could help determine whether more intensive study of the site is necessary.
+
+Municipal staff took four total samples in fall of 2015. One sample was taken in the stream entering the lagoon, prior to residental development, and was thus considered by the samplers to be a control. This 'cpntrol' whas lower concentrations of both NO3 and DOC when compared to the lagoon samples. In particular, a sample taken at the north side of the lagoon (consdiered to be a likely candidate by the particiants for septic contamination) did demonstrate teh higest NO3 concentrations of an sample within the sample set. Although sewage contamination can increase NO3 concentrations, other factors, such as fertilizers from lawns and gardens, can also increase concentrations. A more direct way of testing for spectic field infiltration would be bcteriakl testing to test for the presence of fecal coliforms. Thus, participation within the project lent some gravity to concerns about septic field contamination, with the provision that the specific question posed by the municipality would be best answered using other analytical methods and a more in-depth sampling regime.
 
 ```{r echo = FALSE, message = FALSE, warning = FALSE}
-# Bowen creek samples 218-221
+# Bowen creek samples 218-221. 221 = control
 BI <- c("WL0218", "WL0219", "WL0220", "WL0221")
 BIs <- WLdata[which(WLdata$sample %in% BI),]
 
 DOCNO3 +
-  geom_point(data=BIs, aes(x=BIs$NO3.N, y=BIs$DOCcorr), colour="blue", size=3) 
-
+  geom_point(data=BIs, aes(x=NO3.N, y=DOCcorr, size = FI), colour="black") +
+  geom_point(data=BIs[4,], aes(x=NO3.N, y=DOCcorr, size = FI), colour="blue") 
 ```
 
-
 ## Story 4 - North Shore Wetland Partners
- - deforestation on Cypress - samples around here. Evidence of high iron (e4e6:SUVA)
+ - deforestation on Cypress - samples around here. Evidence of high iron (e4e6:SUVA) WL68
  - Estuary samples?
  
+ *Lesson Learned: Community sampling as a response to a specific event; Limits of methodology; Difficulty of determining effects from specific events or conditions within generalized science plan; Presence of a Community Champion*
+ 
+ The North Shore St
  
 ```{r echo = FALSE, message = FALSE, warning = FALSE}
 # North Shore Wetland Partners
@@ -208,54 +258,94 @@ BI <- c("WL0090", "WL0091", "WL0092", "WL0093", "WL0094", "WL0061", "WL0062", "W
 BIs <- WLdata[which(WLdata$sample %in% BI),]
 
 DOCNO3 +
-  geom_point(data=BIs, aes(x=BIs$NO3.N, y=BIs$DOCcorr), colour="blue", size=3) 
+  geom_point(data=BIs, aes(x=NO3.N, y=DOCcorr, size = FI), colour="blue") +
+  geom_point(data=BIs[6,], aes(x=NO3.N, y=DOCcorr, size = FI), colour="black") 
+ 
+# make size of dot scorrespond to the SUVA?
+#geom_point(aes(size=NO3)) - put in percent protein?
 
 ```
 
 ## Story 5 - North Shore Streamkeepers (Pacific Streamkeepers Federation)
+*Lesson Learned: Community sampling as a response to a specific event; Limits of methodology; Difficulty of determining effects from specific events or conditions within generalized science plan; Sophistication of community resources and existing activities; Importance of an Organizational Champion*
+
 - urban areas and effect of urbanization on fish-bearking streams. Example of very involved with in depth scientific program co-developed with Department of Fisheries and Oceans. Example of champion (Zo Ann morton). 
 - issues with stormwater infltation into streams, as well as illegal connections to stormsystem causing sewage to enter streams.
 -Taccogna, G. and K. Munro (eds). 1995. The Streamkeepers Handbook: a Practical Guide to Stream and Wetland Care. Salmonid Enhancement Program, Dept. Fisheries and Oceans, Vancouver, BC.
 - http://www.pskf.ca/publications/Handbook%20and%20Modules.pdf
 - WL186 = description: Hastings Creek, Flow coming out of construction site, filter cloth in place? Running grey. DOC = 13.67 mg/L
+- Note that the FI for this sample wasn't properly computed...
 
 ```{r echo = FALSE, message = FALSE, warning = FALSE}
-# WL 68 = very high SUVA - high iron?
-BI <- c("WL0090", "WL0091", "WL0092", "WL0093", "WL0094", "WL0061", "WL0062", "WL0063", "WL0064", "WL0065",
-       "WL0067", "WL0068", "WL0069", "WL0070", "WL0065")
-BIs <- WLdata[which(WLdata$sample %in% BI),] # missing 61?
+# North Shore and Zo Ann sampples. High DOC 186
+BI <- c("WL0036", "WL0038","WL0058",  "WL0074", "WL0075", "WL0076", "WL0077", "WL0078", "WL0079", 
+        "WL0179", "WL0180", "WL0181", "WL0182", "WL0183", "WL0184", "WL0185", "WL0186", "WL0187", "WL0188" )
+BIs <- WLdata[which(WLdata$sample %in% BI),] 
 
 DOCNO3 +
-  geom_point(data=BIs, aes(x=BIs$NO3.N, y=BIs$DOCcorr), colour="blue", size=3) 
+  geom_point(data=BIs, aes(x = BIs$NO3.N, y = DOCcorr, size = FI), colour="blue") +
+  geom_point(data=BIs[8,], aes(x = NO3.N, y = DOCcorr), colour="black", size = 3) 
 
 ```
 
 
 ## Story 6 Byrne Creek Streamkeepers
-- effect of urbanization on stream?
+- effect of urbanization on stream.
+- Took downstream
 
 ```{r echo = FALSE, message = FALSE, warning = FALSE}
-# WL 68 = very high SUVA - high iron?
-BI <- c("WL0090", "WL0091", "WL0092", "WL0093", "WL0094", "WL0061", "WL0062", "WL0063", "WL0064", "WL0065",
-       "WL0067", "WL0068", "WL0069", "WL0070", "WL0065")
-BIs <- WLdata[which(WLdata$sample %in% BI),] # missing 61?
+# Byrne Creek = Paul C and 
+BI <- c("WL0155", "WL0193", "WL0194","WL0195","WL0197","WL0200")
+BIs <- WLdata[which(WLdata$sample %in% BI),] 
 
 DOCNO3 +
-  geom_point(data=BIs, aes(x=BIs$NO3.N, y=BIs$DOCcorr), colour="blue", size=3) 
+  geom_point(data=BIs, aes(x=BIs$NO3.N, y=BIs$DOCcorr, size = FI), colour="blue") 
 
 ```
 
-## Story 7: One sample from Mt Polley Spill
+## Story 7:  Sample from Mt Polley Mining Disaster
+*Lesson Learned: Community sampling as a response to a specific event; Limits of methodology; Difficulty of determining effects from specific events or conditions within generalized science plan*
 - WL40
 - Description: "Dock near boats. summertime. Clear morning around 24degC. Three days after major environmental disaster at Polley Mountain Mine. Lake and surrounding water ways have floating debris + government water ban."
+- Difficult to understand impacts, given the reach of sampling, as well as limits in the types of analysis
 
-## story 8: Lawson Creek Fish Kills 
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+# Mt Polley Spill
+BI <- c("WL0040")
+BIs <- WLdata[which(WLdata$sample %in% BI),] 
+
+DOCNO3 +
+  geom_point(data=BIs, aes(x=BIs$NO3.N, y=BIs$DOCcorr, size = FI), colour="blue") 
+
+```
+
+## Story 8: Lawson Creek Fish Kills 
+*Lesson Learned: Community sampling as a response to a specific event; Limits of methodology; Difficulty of determining effects from specific events or conditions within generalized science plan; Sophistication of community resources and existing activities*
+
 Lawson creek - West vancouver STreamkeepers + Pacific Wetland Partners
 66, 67 - PWP
 102, 110, 130 - West Van Streamkeepers
+- Concerns about fish kills in stream
 "The second attachment is a summary of possible sources of fish kill written by a biologist with Sartori Environmental.  I don’t agree with the summary that the coho expired due to being stressed during transport.  If this were the case, one would have expected dead fish after the date we released the coho, rather than several weeks later.  I think we just don’t know why the fish were killed. 
  
 Elizabeth Hardy""
+
+- limits of evaluation (same as the Mt Polley Spill sample). Difficult to see why stream has toxic effects on fish released.
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+# Lawson Creek Samples
+BI <- c("WL0066", "WL0067", "WL0102", "WL0110", "WL0130")
+BIs <- WLdata[which(WLdata$sample %in% BI),] 
+
+DOCNO3 +
+  geom_point(data=BIs, aes(x=BIs$NO3.N, y=BIs$DOCcorr, size = FI), colour="blue") 
+
+```
+
+# Other themes:
+- Lack of current water quality assessment from actors such as different levels of government. Lack of resourcing around water quality assessment in general, noting participation of several municipalities, and water quality groups closely associated with muncipal governments. Also, that monitoring, assessment and remediation of watersheds within this context shouldered by community groups with limited resource (run by committed volunteers and small staff). 
+- That community level activities can in certain cases be quite sophisticated, despite limited resourcing and p[redominately volunteer composition.
+- Significant capacity can exist within the community context, including groups and individuals with extensive knowledge regarding the history and conditiopns of a specific watershed. In certain cases, this can also include sophisticated long term monitoring studies.
 
 
 # Supplemental Information and Statistical Tests
