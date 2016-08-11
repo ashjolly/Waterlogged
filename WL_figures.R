@@ -90,13 +90,11 @@ theme = theme_set(theme_bw() +
                           plot.title = element_text(size=14)))
 
 # DOC
-pdf(file=paste0(dir,"/WLFigures_DOCNO3.pdf"), width = 11, height = 8.5)
-
 DOCplot <- ggplot(DOC, aes(DOC_mgL, fill = code)) + geom_density(alpha = 0.2) +
   scale_fill_manual(values=c(cbPalette[6], cbPalette[2]),
                     name="Data\nSource",
                     breaks=c("DBP", "WL"),
-                    labels=c("Scientist", "Citizen")) + 
+                    labels=c(" Scientist", " Citizen")) + 
   theme(legend.title=element_blank()) +
   theme(legend.position=c(.8, .85)) +
   geom_vline(aes(xintercept=mean(WLdata$DOCcorr, na.rm=T)),   # Ignore NA values for mean
@@ -112,22 +110,21 @@ NO3plot <- ggplot(NO3, aes(NO3mgL, fill = code)) + geom_density(alpha = 0.2) +
   scale_fill_manual(values=c(cbPalette[6], cbPalette[2]),
                     name="Data\nSource",
                     breaks=c("DBP", "WL"),
-                    labels=c("Scientist","Citizen")) +
+                    labels=c(" Scientist", " Citizen")) +
   theme(legend.title=element_blank()) +
   theme(legend.position=c(.8, .85)) +
   geom_vline(aes(xintercept=mean(WLdata$NO3.N, na.rm=T)),   # Ignore NA values for mean
              color=cbPalette[2], linetype="dashed", size=1) +
   geom_vline(aes(xintercept=mean(DBPdata$NO3, na.rm=T)),   # Ignore NA values for mean
              color=cbPalette[6], linetype="dashed", size=1) + 
-  ggtitle(expression('NO'[3]*' Concentration')) +
+  ggtitle(expression('NO'[3]*'- Concentration')) +
   ylab(expression('')) +
-  xlab(expression('NO'[3]*' Concentration (mg/L)')) +
-  theme(legend.text.align=1)
+  xlab(bquote('NO'[3]*'- Concentration (mg/L)')) 
 
+pdf(file=paste0(dir,"/WLFigures_DOCNO3.pdf"), width = 11, height = 8.5)
 grid.arrange(DOCplot,NO3plot,ncol=2)
 grid.text("A", x=unit(0, "npc")+ unit(2,"mm"), y=unit(1, "npc") - unit(5, "mm"), just=c("left", "top"),gp = gpar(fontsize=20))
 grid.text("B", x=unit(0.5, "npc"), y=unit(1, "npc") - unit(5, "mm"), just=c("left", "top"),gp = gpar(fontsize=20))
-
 dev.off()
 
 ### Plot scatterplot - DOC and NO3 concentrations
@@ -141,12 +138,12 @@ ggplot(DN, aes(x = NO3mgL, y = DOC_mgL, color = code)) + geom_point() +
   scale_color_manual(values=c(cbPalette[6], cbPalette[3]),
                      name="Data\nSource",
                      breaks=c("DBP", "WL"),
-                     labels=c("Scientist","Citizen")) +
+                     labels=c(" Scientist"," Citizen")) +
   theme(legend.position=c(.8, .85)) +
   xlim(0, 3) +
   scale_shape_manual(values=c(5,2)) +
   ylab("DOC (mg/L)") +
-  xlab(expression('NO'[3]*' Concentration (mg/L)')) +
+  xlab(expression('NO'[3]*'- Concentration (mg/L)')) +
   #geom_point(aes(size = FI)) + 
   #scale_size_continuous(name = FI, range = c(0.5,3))
   geom_vline(aes(xintercept=mean(DN$NO3mgL, na.rm=T)),    # Add mean NO3 for both datasets
@@ -177,7 +174,7 @@ DOCNO3 <- ggplot(data = DN, aes(x = NO3mgL, y = DOC_mgL, color = "white")) + geo
   xlim(0, 3) +
   scale_shape_manual(values=c(5,2)) +
   ylab("DOC (mg/L)") +
-  xlab(expression('NO'[3]*' Concentration (mg/L)')) +
+  xlab(expression('NO'[3]*'- Concentration (mg/L)')) +
   #geom_point(aes(size = FI)) + 
   #scale_size_continuous(name = FI, range = c(0.5,3))
   geom_vline(aes(xintercept=mean(DN$NO3mgL, na.rm=T)),    # Add mean NO3 for both datasets
@@ -207,7 +204,7 @@ ES <- WLdata[which(WLdata$sample %in% EGsamples),]
 St1 <-DOCNO3 +
   geom_point(data=ES, aes(x=ES$NO3.N, y=ES$DOCcorr, size = 1), colour=cbbPalette[2]) +
   theme(legend.position="none") +
-  ggtitle(expression('Story 1 - Evergreen')) +
+  ggtitle(expression('Story 1')) +
   theme(legend.position="none")
 
 ### Silver Creek Streamkeepers
@@ -223,7 +220,7 @@ St2 <- DOCNO3 +
   geom_point(data=up, aes(x=NO3.N, y=DOCcorr, size = 1), colour=cbbPalette[2])  +
   geom_point(data=down, aes(x=NO3.N, y=DOCcorr, size = 1), colour=cbbPalette[7]) +
   theme(legend.position="none") +
-  ggtitle(expression('Story 2 - Silver Creek')) 
+  ggtitle(expression('Story 2')) 
 
 #### Bowen Island samples 218-221. 221 = control
 BI <- c("WL0218", "WL0219", "WL0220", "WL0221")
@@ -232,7 +229,7 @@ St3 <- DOCNO3 +
   geom_point(data=BIs, aes(x=NO3.N, y=DOCcorr, size = 1), colour=cbbPalette[7]) +
   geom_point(data=BIs[4,], aes(x=NO3.N, y=DOCcorr, size = 1), colour=cbbPalette[2]) +
   theme(legend.position="none") +
-  ggtitle(expression('Story 3 - Bowen Island')) 
+  ggtitle(expression('Story 3')) 
 
 ### North Shore Streamkeepers
 NSS <- c("WL0090", "WL0091", "WL0092", "WL0093", "WL0094", "WL0061", "WL0062", "WL0063", "WL0064", "WL0065",
@@ -243,7 +240,7 @@ St4 <- DOCNO3 +
   geom_point(data=NSS, aes(x=NO3.N, y=DOCcorr, size = 1), colour=cbbPalette[2]) +
   geom_point(data=NSS[6,], aes(x=NO3.N, y=DOCcorr, size = 1), colour=cbbPalette[7]) +
   theme(legend.position="none") +
-  ggtitle(expression('Story 4 - North Shore Streamkeepers')) 
+  ggtitle(expression('Story 4')) 
 
 ### North Shore  Zo Ann sampples. High DOC 186
 ZA <- c("WL0036", "WL0038","WL0058",  "WL0074", "WL0075", "WL0076", "WL0077", "WL0078", "WL0079", 
@@ -254,7 +251,7 @@ St5 <- DOCNO3 +
   geom_point(data=ZA, aes(x = NO3.N, y = DOCcorr, size = 1), colour = cbbPalette[2]) +
   geom_point(data=ZA[8,], aes(x = NO3.N, y = DOCcorr, size = 1), colour = cbbPalette[7]) +
   theme(legend.position="none") +
-  ggtitle(expression('Story 5 - PSWF')) 
+  ggtitle(expression('Story 5')) 
 
 ### Mt Polley Spill
 MP <- c("WL0040")
@@ -262,7 +259,7 @@ MP <- WLdata[which(WLdata$sample %in% MP),]
 St6 <- DOCNO3 +
   geom_point(data=MP, aes(x=NO3.N, y=DOCcorr, size = 1), colour = cbbPalette[2]) +
   theme(legend.position="none") +
-  ggtitle(expression('Story 6 - Mt Polley Mine')) 
+  ggtitle(expression('Story 6')) 
 
 ### Lawson Creek Samples
 #66, 67 - PWP
@@ -272,7 +269,7 @@ LC <- WLdata[which(WLdata$sample %in% LC),]
 St7 <- DOCNO3 +
   geom_point(data=LC, aes(x=NO3.N, y=DOCcorr, size = 1), colour = cbbPalette[2]) +
   theme(legend.position="none") +
-  ggtitle(expression('Story 7 - North Shore Fish Kill')) 
+  ggtitle(expression('Story 7')) 
 # missing 66?
 
 ### Byrne Creek = Paul C and 
@@ -281,7 +278,7 @@ BC <- WLdata[which(WLdata$sample %in% BC),]
 St8 <- DOCNO3 +
   geom_point(data=BC, aes(x=NO3.N, y=DOCcorr, size = 1), colour=cbbPalette[2]) +
   theme(legend.position="none") +
-  ggtitle(expression('Story 8 - Byrne Creek'))
+  ggtitle(expression('Story 8'))
 
 # arrange in grid for saving as pdf
 grid.arrange(St1, St2, St3, St4, St5, St6, ncol=2)
@@ -340,6 +337,9 @@ ggplot(DOC, aes(x=code, y=DOC_mgL, fill=code)) + geom_boxplot()
 NO3T <- t.test(NO3mgL ~ code, data = NO3)
 ggplot(NO3, aes(x=code, y=NO3mgL, fill=code)) + geom_boxplot()
 
+SUVAt <- t.test(SUVA ~ code, data = SUVA)
+ggplot(SUVA, aes(x=code, y=SUVA, fill=code)) + geom_boxplot()
+
 e2e3T <- t.test(e2e3 ~ code, data = e2e3)
 ggplot(e2e3, aes(x=code, y=e2e3, fill=code)) + geom_boxplot()
 
@@ -373,7 +373,7 @@ ggplot(redox, aes(x=code, y=redox, fill=code)) + geom_boxplot()
 t.test(perprotein ~ code, data = perprotein)
 ggplot(perprotein, aes(x=code, y=perprotein, fill=code)) + geom_boxplot()
 
-test <- cbind(DOC, NO3, e2e3, e4e6, FI, HIX, BIX, peakA, peakC, peakT, peakB, redox, perprotein)
+test <- cbind(DOC, NO3, SUVA, e2e3, e4e6, FI, HIX, BIX, peakA, peakC, peakT, peakB, redox, perprotein)
 test <- test[, !duplicated(colnames(test))]
 means <- ddply(test, "code", colwise(mean), na.rm = TRUE)
 stdevd <- ddply(test, "code", colwise(sd), na.rm = TRUE) # calculate st dev for all of the datasets 
