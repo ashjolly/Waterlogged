@@ -161,7 +161,6 @@ ggplot(DN, aes(x = NO3mgL, y = DOC_mgL, color = code)) + geom_point() +
 
 # need to deal with NAs in FI...
 dev.off() 
-
 #########
 ### Figure 3 - specific stories
 # Took out size = FI - too much information.
