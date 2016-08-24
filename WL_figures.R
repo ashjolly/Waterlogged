@@ -147,11 +147,11 @@ ggplot(DN, aes(x = NO3mgL, y = DOC_mgL, color = code)) + geom_point() +
   #geom_point(aes(size = FI)) + 
   #scale_size_continuous(name = FI, range = c(0.5,3))
   geom_vline(aes(xintercept=mean(DN$NO3mgL, na.rm=T)),    # Add mean NO3 for both datasets
-             color=cbPalette[3], linetype="solid", size=1) + 
+             color=cbPalette[1], linetype="solid", size=1) + 
   geom_vline(aes(xintercept=as.numeric(quantile(DN$NO3mgL, 0.25, na.rm = TRUE))),    # Add 25% NO3 for both datasets
-             color=cbPalette[3], linetype="dashed", size=1) + 
+             color=cbPalette[1], linetype="dashed", size=1) + 
   geom_vline(aes(xintercept=as.numeric(quantile(DN$NO3mgL, 0.75, na.rm = TRUE))),    # Add 75% NO3 for both datasets
-             color=cbPalette[3], linetype="dashed", size=1) + 
+             color=cbPalette[1], linetype="dashed", size=1) + 
   geom_hline(aes(yintercept=mean(DN$DOC_mgL, na.rm=T)),   # Add mean DOC for both datasets
              color=cbPalette[1], linetype="solid", size=1) +
   geom_hline(aes(yintercept=as.numeric(quantile(DN$DOC_mgL, 0.25, na.rm = TRUE))),   # Add 25% DOC for both datasets
