@@ -102,8 +102,13 @@ DOCplot <- ggplot(DOC, aes(DOC_mgL, fill = code)) + geom_density(alpha = 0.2) +
   geom_vline(aes(xintercept=mean(DBPdata$NPOC_DOC_uncorrected, na.rm=T)),   # Ignore NA values for mean
              color=cbPalette[6], linetype="dashed", size=1) +
   ggtitle("DOC Concentration") +
-  scale_y_continuous(name="Density") +
-  scale_x_continuous(name="DOC Concentration (mg/L)")
+  scale_y_continuous(name="Density", breaks = seq(0, 0.35, by = 0.05)) +
+  scale_x_continuous(name="DOC Concentration (mg/L)", breaks = seq(0, 22, by = 2)) + 
+  theme(strip.text = element_text(size=16),
+              axis.text=element_text(size=16, color = "black"), 
+              axis.title = element_text(size=16), legend.text = element_text(size=16),
+              plot.title = element_text(size=16))
+
 
 # NO3
 NO3plot <- ggplot(NO3, aes(NO3mgL, fill = code)) + geom_density(alpha = 0.2) +
@@ -119,7 +124,12 @@ NO3plot <- ggplot(NO3, aes(NO3mgL, fill = code)) + geom_density(alpha = 0.2) +
              color=cbPalette[6], linetype="dashed", size=1) + 
   ggtitle(expression('NO'[3]*'- Concentration')) +
   ylab(expression('')) +
-  xlab(bquote('NO'[3]*'- Concentration (mg/L)')) 
+  scale_y_continuous(name="", breaks = seq(0, 6.5, by = 1)) +
+  scale_x_continuous(name=bquote('NO'[3]*'- Concentration (mg/L)'), breaks = seq(0, 7, by = 1)) + 
+  theme(strip.text = element_text(size=16),
+        axis.text=element_text(size=16, color = "black"), 
+        axis.title = element_text(size=16), legend.text = element_text(size=16),
+        plot.title = element_text(size=16))
 
 pdf(file=paste0(dir,"/WLFigures_DOCNO3.pdf"), width = 11, height = 8.5)
 grid.arrange(DOCplot,NO3plot,ncol=2)
@@ -140,10 +150,11 @@ ggplot(DN, aes(x = NO3mgL, y = DOC_mgL, color = code)) + geom_point() +
                      breaks=c("DBP", "WL"),
                      labels=c(" Scientist"," Citizen")) +
   theme(legend.position=c(.8, .85)) +
-  xlim(0, 3) +
+  scale_x_continuous(name=expression('NO'[3]*'- (mg/L)'), breaks = seq(0, 7, by = 1)) + 
+  scale_y_continuous(name="DOC (mg/L)", breaks = seq(0, 25, by = 2)) + 
   scale_shape_manual(values=c(5,2)) +
-  ylab("DOC (mg/L)") +
-  xlab(expression('NO'[3]*'- Concentration (mg/L)')) +
+  #ylab("DOC (mg/L)") +
+  #xlab(expression('NO'[3]*'- Concentration (mg/L)')) +
   #geom_point(aes(size = FI)) + 
   #scale_size_continuous(name = FI, range = c(0.5,3))
   geom_vline(aes(xintercept=mean(DN$NO3mgL, na.rm=T)),    # Add mean NO3 for both datasets
@@ -157,7 +168,11 @@ ggplot(DN, aes(x = NO3mgL, y = DOC_mgL, color = code)) + geom_point() +
   geom_hline(aes(yintercept=as.numeric(quantile(DN$DOC_mgL, 0.25, na.rm = TRUE))),   # Add 25% DOC for both datasets
              color=cbPalette[1], linetype="dashed", size=1) +
   geom_hline(aes(yintercept=as.numeric(quantile(DN$DOC_mgL, 0.75, na.rm = TRUE))),   # Add 75% DOC for both datasets
-             color=cbPalette[1], linetype="dashed", size=1) 
+             color=cbPalette[1], linetype="dashed", size=1) + 
+  theme(strip.text = element_text(size=16),
+        axis.text=element_text(size=16, color = "black"), 
+        axis.title = element_text(size=16), legend.text = element_text(size=16),
+        plot.title = element_text(size=16))
 
 # need to deal with NAs in FI...
 dev.off() 
@@ -173,7 +188,7 @@ DOCNO3 <- ggplot(data = DN, aes(x = NO3mgL, y = DOC_mgL, color = "white")) + geo
   xlim(0, 3) +
   scale_shape_manual(values=c(5,2)) +
   ylab("DOC (mg/L)") +
-  xlab(expression('NO'[3]*'- Concentration (mg/L)')) +
+  xlab(expression('NO'[3]*'-(mg/L)')) +
   #geom_point(aes(size = FI)) + 
   #scale_size_continuous(name = FI, range = c(0.5,3))
   geom_vline(aes(xintercept=mean(DN$NO3mgL, na.rm=T)),    # Add mean NO3 for both datasets
@@ -215,6 +230,7 @@ all <- c("WL0157", "WL0158", "WL0165", "WL0027", "WL0164")
 # match samples that have data
 up <- WLdata[which(WLdata$sample %in% up),]
 down <- WLdata[which(WLdata$sample %in% down),]
+all <- WLdata[which(WLdata$sample %in% all),]
 St2 <- DOCNO3 +
   geom_point(data=up, aes(x=NO3.N, y=DOCcorr, size = 1), colour=cbbPalette[2])  +
   geom_point(data=down, aes(x=NO3.N, y=DOCcorr, size = 1), colour=cbbPalette[7]) +
